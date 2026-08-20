@@ -1,0 +1,119 @@
+// Prisma schema for College Discovery Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CollegeType {
+  GOVERNMENT
+  PRIVATE
+  DEEMED
+}
+
+model College {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  city           String
+  state          String
+  type           CollegeType
+  feesMin        Int
+  feesMax        Int
+  rating         Float
+  establishedYear Int
+  logoUrl        String?
+  description    String
+
+  courses        Course[]
+  placements     Placement[]
+  reviews        Review[]
+  savedBy        SavedCollege[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([city])
+  @@index([state])
+  @@index([type])
+  @@index([rating])
+  @@index([feesMin, feesMax])
+}
+
+model Course {
+  id            String  @id @default(cuid())
+  collegeId     String
+  college       College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name          String
+  degree        String
+  durationYears Int
+  fees          Int
+
+  @@index([collegeId])
+}
+
+model Placement {
+  id             String  @id @default(cuid())
+  collegeId      String
+  college        College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  year           Int
+  avgPackage     Float
+  medianPackage  Float
+  highestPackage Float
+  placementRate  Float
+
+  @@index([collegeId])
+  @@unique([collegeId, year])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  rating    Int
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([collegeId])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime @default(now())
+
+  reviews          Review[]
+  savedColleges    SavedCollege[]
+  savedComparisons SavedComparison[]
+}
+
+model SavedCollege {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, collegeId])
+  @@index([userId])
+}
+
+model SavedComparison {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  collegeIds String[]
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
