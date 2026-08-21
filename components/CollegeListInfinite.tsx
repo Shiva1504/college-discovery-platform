@@ -22,21 +22,27 @@ export function CollegeListInfinite({
   const [page, setPage] = useState(initial.page);
   const [totalPages, setTotalPages] = useState(initial.totalPages);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
   const loadMore = useCallback(async () => {
-    if (loading || page >= totalPages) return;
+    if (loadingRef.current || page >= totalPages) return;
+    loadingRef.current = true;
     setLoading(true);
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(page + 1));
     const res = await fetch(`/api/colleges?${params.toString()}`);
     const json: ListResponse = await res.json();
-    setItems((prev) => [...prev, ...json.data]);
+    setItems((prev) => {
+      const seen = new Set(prev.map((c) => c.slug));
+      return [...prev, ...json.data.filter((c) => !seen.has(c.slug))];
+    });
     setPage(json.page);
     setTotalPages(json.totalPages);
+    loadingRef.current = false;
     setLoading(false);
-  }, [loading, page, totalPages, searchParams]);
+  }, [page, totalPages, searchParams]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -73,15 +79,15 @@ export function CollegeListInfinite({
     <div className="pb-24">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((college) => (
-          <div key={college.slug} className="relative">
-            <label className="absolute top-3 left-3 z-10 inline-flex items-center rounded-md bg-white/90 shadow-sm border border-neutral-200 px-2 py-1 text-xs gap-1 cursor-pointer">
+          <div key={college.slug}>
+            <label className="mb-1.5 inline-flex items-center gap-1.5 text-xs text-neutral-500 cursor-pointer">
               <input
                 type="checkbox"
                 checked={selected.includes(college.slug)}
                 onChange={() => toggleSelect(college.slug)}
                 className="accent-neutral-900"
               />
-              Compare
+              Add to compare
             </label>
             <CollegeCard college={college} />
           </div>

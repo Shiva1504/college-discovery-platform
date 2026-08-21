@@ -25,14 +25,14 @@ export async function listColleges(query: CollegeListQuery) {
     }),
   };
 
-  const orderBy: Prisma.CollegeOrderByWithRelationInput =
+  const orderBy: Prisma.CollegeOrderByWithRelationInput[] =
     sort === "fees_asc"
-      ? { feesMin: "asc" }
+      ? [{ feesMin: "asc" }, { id: "asc" }]
       : sort === "fees_desc"
-        ? { feesMax: "desc" }
+        ? [{ feesMax: "desc" }, { id: "asc" }]
         : sort === "name_asc"
-          ? { name: "asc" }
-          : { rating: "desc" };
+          ? [{ name: "asc" }, { id: "asc" }]
+          : [{ rating: "desc" }, { id: "asc" }];
 
   const [data, total] = await Promise.all([
     prisma.college.findMany({
